@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roadly — Vehicle Rental</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="toast.css" />
+  <link rel="stylesheet" href="layout-fix.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="rental-plan.css" />
+</head>
+<body>
+  <div id="toast" role="status"></div>
+  <header class="topbar">
+    <a class="brand" href="#home" aria-label="Roadly home"><span class="brand-mark">R</span>ROADLY</a>
+    <nav><a href="#vehicles">Explore cars</a><a href="#how">How it works</a><button class="text-btn" id="loginOpen">Login</button><button class="text-btn" id="adminOpen">Owner portal</button></nav>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+  </header>
+
+  <main>
+    <section class="hero" id="home">
+      <div class="hero-copy">
+        <p class="eyebrow">FREEDOM, ON DEMAND</p>
+        <h1>Your next drive<br><em>starts here.</em></h1>
+        <p class="lead">Book a dependable vehicle in minutes. Clear pricing, flexible dates, no paperwork.</p>
+      </div>
+      <div class="hero-art" aria-hidden="true"><div class="sun"></div><div class="road"></div><div class="car"><span></span><i></i><b></b></div></div>
+      <form class="search-panel" id="searchForm">
+        <fieldset class="plan-picker"><legend>Choose rental option</legend><div><button type="button" class="plan-btn" data-plan="distance">By distance (₹ / km)</button><button type="button" class="plan-btn" data-plan="daily">By days (fixed price)</button></div></fieldset>
+        <label>Pick-up location<input type="text" id="location" placeholder="Enter pick-up location" required></label>
+        <label id="destinationField">Destination<input type="text" id="destination" placeholder="Enter destination"></label>
+        <label>Pick-up date<input type="date" id="pickup" required></label>
+        <label>Number of days<input type="number" id="rentalDays" min="1" value="1" required></label>
+        <button class="primary" type="submit">Find a car <span>→</span></button>
+      </form>
+    </section>
+
+    <section class="cars section" id="vehicles">
+      <div class="section-head"><div><p class="eyebrow">THE FLEET</p><h2>Choose your perfect ride</h2></div><div class="filters"><button class="filter active" data-filter="all">All cars</button><button class="filter" data-filter="SUV">SUVs</button><button class="filter" data-filter="Sedan">Sedans</button><button class="filter" data-filter="Hatchback">Hatchbacks</button></div></div>
+      <div class="car-grid" id="carGrid"></div>
+    </section>
+
+    <section class="steps section" id="how"><p class="eyebrow">SIMPLE BY DESIGN</p><h2>On the road in 3 easy steps</h2><div class="step-grid"><article><span>01</span><h3>Choose a vehicle</h3><p>Browse our maintained fleet and select the car that fits your plan.</p></article><article><span>02</span><h3>Reserve your dates</h3><p>Pick your collection and return dates. See your exact price before you pay.</p></article><article><span>03</span><h3>Drive away happy</h3><p>Receive instant confirmation and collect your keys at your chosen location.</p></article></div></section>
+    <section class="cta"><div><p class="eyebrow">NEED A HAND?</p><h2>We're here for every mile.</h2></div><button class="light-btn" id="supportBtn">Contact support →</button></section>
+  </main>
+
+  <dialog id="bookingDialog"><button class="close" data-close="bookingDialog">×</button><div id="bookingContent"></div></dialog>
+  <dialog id="adminDialog" class="admin-dialog"><button class="close" data-close="adminDialog">×</button><div id="adminContent"></div></dialog>
+  <dialog id="loginDialog"><button class="close" data-close="loginDialog">×</button><div id="loginContent"></div></dialog>
+  <footer><span>© 2026 Roadly Rentals</span><span>Designed for better journeys</span></footer>
+  <script src="app2.js"></script>
+</body>
+</html>

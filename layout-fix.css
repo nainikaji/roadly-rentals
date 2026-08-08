@@ -1,0 +1,2 @@
+/* Keeps the booking bar above the next section instead of clipping it. */
+.hero{z-index:1;overflow:visible}
