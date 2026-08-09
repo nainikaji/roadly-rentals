@@ -1,2 +1,28 @@
 /* Keeps the booking bar above the next section instead of clipping it. */
 .hero{z-index:1;overflow:visible}
+
+/* Modern photo-led hero. The dark overlay keeps the heading easy to read. */
+.hero{
+  min-height:620px;
+  color:#fff;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(188,244,102,.20), transparent 30%),
+    linear-gradient(105deg, #07110f 0%, #10251f 57%, #0d1714 100%);
+}
+.hero .eyebrow{color:#c9f258}
+.hero h1{color:#fff}
+.hero h1 em{color:#c9f258}
+.hero .lead{color:#d8e1dc}
+.hero-art{
+  width:52%;
+  background:
+    linear-gradient(90deg, #10251f 0%, rgba(16,37,31,.58) 18%, rgba(7,17,15,.12) 100%),
+    url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1800&q=85') center/cover;
+  clip-path:polygon(16% 0,100% 0,100% 100%,0 100%);
+}
+.hero-art .sun,.hero-art .road,.hero-art .car{display:none}
+
+@media(max-width:760px){
+  .hero-art{width:100%;opacity:.34;clip-path:none}
+  .hero-copy{max-width:100%}
+}
