@@ -26,36 +26,3 @@
   .hero-art{width:100%;opacity:.34;clip-path:none}
   .hero-copy{max-width:100%}
 }
-
-/* Photo-led fleet cards. Images are cropped consistently for a clean catalogue look. */
-.vehicle-art{
-  position:relative;
-  overflow:hidden;
-  font-size:0;
-  background-position:center;
-  background-size:cover;
-}
-.vehicle-art::after{
-  content:'ROADLY VERIFIED';
-  position:absolute;
-  left:12px;
-  bottom:12px;
-  padding:5px 7px;
-  border-radius:2px;
-  background:rgba(8,19,16,.78);
-  color:#eaffb5;
-  font:700 9px/1 'DM Sans',sans-serif;
-  letter-spacing:1px;
-}
-.car-card:nth-child(1) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1504215680853-026ed2a45def?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(2) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(3) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1494905998402-395d579af36f?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(4) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(5) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(6) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(7) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(8) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1533106418989-88406c7cc8ca?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(9) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1568844293986-8d0400bd4745?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(10) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(11) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1520050206274-a1ae44613e6d?auto=format&fit=crop&w=900&q=85')}
-.car-card:nth-child(12) .vehicle-art{background-image:url('https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=900&q=85')}
