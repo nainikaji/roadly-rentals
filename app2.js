@@ -17,6 +17,31 @@ const cars = [
     icon: x[6],
   },
 }));
+const savedOwnerVehicles = JSON.parse(localStorage.getItem('roadlyOwnerVehicles') || '[]');
+if (Array.isArray(savedOwnerVehicles)) cars.push(...savedOwnerVehicles);
+function saveOwnerVehicles() {
+  localStorage.setItem(
+    'roadlyOwnerVehicles',
+    JSON.stringify(cars.filter((car) => car.ownerListed))
+  );
+}
+function readVehicleImage(file) {
+  if (!file) return Promise.resolve('');
+  if (file.size > 1500000) {
+    note('Please choose an image smaller than 1.5 MB.');
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+cars.forEach((car) => {
+  car.model = '2024';
+  car.fuel = car.type === 'SUV' ? 'Diesel' : 'Petrol';
+  car.availableDates = 'Available from 20 Aug 2026';
+});
 const $ = (s) => document.querySelector(s),
   $$ = (s) => [...document.querySelectorAll(s)],
   money = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
@@ -29,6 +54,10 @@ const locationInput = $('#location'),
   daysInput = $('#rentalDays'),
   grid = $('#carGrid'),
   toast = $('#toast');
+const vehicleSearch = $('#vehicleSearch'),
+  fuelFilter = $('#fuelFilter'),
+  gearFilter = $('#gearFilter'),
+  priceFilter = $('#priceFilter');
 $('#pickup').value = new Date().toISOString().slice(0, 10);
 function note(text) {
   toast.textContent = text;
@@ -39,10 +68,21 @@ function headers() {
   const token = sessionStorage.getItem('roadlyToken');
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+function matchesFilters(car) {
+  const query = vehicleSearch.value.trim().toLowerCase();
+  const maximumPrice = +priceFilter.value || Infinity;
+  return (
+    (filter === 'all' || car.type === filter) &&
+    (!query || car.name.toLowerCase().includes(query)) &&
+    (fuelFilter.value === 'all' || car.fuel === fuelFilter.value) &&
+    (gearFilter.value === 'all' || car.gear === gearFilter.value) &&
+    car.dailyRate <= maximumPrice
+  );
+}
 function drawCars() {
   const days = Math.max(1, +daysInput.value || 1);
   grid.innerHTML = cars
-    .filter((c) => filter === 'all' || c.type === filter)
+    .filter(matchesFilters)
     .map((c) => {
       let price = money(c.perKm),
         unit = '/ km',
@@ -59,7 +99,7 @@ function drawCars() {
         unit = 'estimated trip';
         detail = `<small><br>${estimate.distance_km} km route</small>`;
       }
-      return `<article class="car-card"><div class="vehicle-art">${c.icon}</div><div class="car-name"><div><h3>${c.name}</h3><span>${c.type}</span></div><span class="tag">Available</span></div><div class="specs"><span>👤 ${c.seats} seats</span><span>⚙ ${c.gear}</span></div><div class="price-row"><div><strong>${price}</strong> <small>${unit}</small>${detail}</div><button class="book-btn" data-book="${c.id}">Book now</button></div></article>`;
+      return `<article class="car-card"><button class="vehicle-art" data-details="${c.id}" aria-label="View ${c.name} details">${c.image ? `<img src="${c.image}" alt="${c.name}">` : c.icon}</button><div class="car-name"><div><h3>${c.name}</h3><span>${c.type} · ${c.fuel}</span></div><span class="tag">Available</span></div><div class="specs"><span>👤 ${c.seats} seats</span><span>⚙ ${c.gear}</span></div><div class="price-row"><div><strong>${price}</strong> <small>${unit}</small>${detail}</div><div class="card-actions"><button class="details-btn" data-details="${c.id}">Details</button><button class="book-btn" data-book="${c.id}">Book now</button></div></div></article>`;
     })
     .join('');
 }
@@ -87,6 +127,14 @@ $$('.filter').forEach(
       drawCars();
     })
 );
+[vehicleSearch, fuelFilter, gearFilter, priceFilter].forEach((input) =>
+  input.addEventListener('input', drawCars)
+);
+$('#fleetSearch').onsubmit = (event) => {
+  event.preventDefault();
+  drawCars();
+  note('Vehicle filters applied.');
+};
 [locationInput, destinationInput, daysInput].forEach((i) =>
   i.addEventListener('input', () => {
     estimate = null;
@@ -169,34 +217,96 @@ function showRegister() {
   };
 }
 function updateAccount() {
-  $('#loginOpen').textContent = user
-    ? `Hi, ${user.name.split(' ')[0]}`
-    : 'Login';
+  $('#loginOpen').textContent = user ? `Hi, ${user.name.split(' ')[0]}` : 'Login';
+  $('#dashboardOpen').hidden = !user || user.role !== 'customer';
 }
-$('#loginOpen').onclick = () =>
-  user
-    ? (sessionStorage.clear(),
-      (user = null),
-      updateAccount(),
-      note('Logged out.'))
-    : showLogin();
-$('#adminOpen').onclick = async () => {
-  if (!user || user.role !== 'owner') return showLogin('owner');
-  const dialog = $('#adminDialog'),
-    box = $('#adminContent');
+function downloadReceipt(booking) {
+  const receipt = `ROADLY RENTALS RECEIPT\nBooking #VRM${booking.id}\nVehicle: ${booking.car}\nDates: ${booking.rental_dates}\nTotal: ${money(booking.amount)}\nStatus: ${booking.status}`;
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(new Blob([receipt], { type: 'text/plain' }));
+  link.download = `roadly-receipt-${booking.id}.txt`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+async function showUserDashboard() {
+  if (!user || user.role !== 'customer') return showLogin('customer');
+  const dialog = $('#userDialog'), box = $('#userContent');
   dialog.showModal();
-  box.innerHTML =
-    '<section class="admin"><p class="empty">Loading bookings…</p></section>';
-  const r = await fetch('/api/bookings', { headers: headers() }),
-    data = await r.json();
-  if (!r.ok)
-    return (box.innerHTML = `<section class="admin"><p class="empty">${data.error}</p></section>`);
-  box.innerHTML = `<section class="admin"><div class="admin-top"><div><p class="eyebrow">OWNER CONSOLE</p><h2>Booking dashboard</h2></div><div><span class="admin-stat">${data.length}</span> reservations</div></div>${data.length ? `<table><thead><tr><th>Customer</th><th>Vehicle</th><th>Rental</th><th>Amount</th></tr></thead><tbody>${data.map((b) => `<tr><td>${b.customer}</td><td>${b.car}</td><td>${b.rental_dates}</td><td>${money(b.amount)}</td></tr>`).join('')}</tbody></table>` : '<p class="empty">No bookings yet.</p>'}</section>`;
-};
+  box.innerHTML = '<section class="admin"><p class="empty">Loading your bookings…</p></section>';
+  const response = await fetch('/api/my-bookings', { headers: headers() });
+  const bookings = await response.json();
+  if (!response.ok) return (box.innerHTML = `<section class="admin"><p class="empty">${bookings.error}</p></section>`);
+  const rows = bookings.map((booking) => `<article class="booking-history"><div><b>Booking #VRM${booking.id}</b><h3>${booking.car}</h3><p>${booking.rental_dates} · ${money(booking.amount)}</p></div><div><span class="status status-${booking.status.toLowerCase()}">${booking.status}</span><div class="history-actions"><button class="details-btn" data-receipt="${booking.id}">Receipt</button>${booking.status !== 'Cancelled' ? `<button class="danger" data-cancel="${booking.id}">Cancel</button>` : ''}</div></div></article>`).join('');
+  box.innerHTML = `<section class="admin user-dashboard"><div class="admin-top"><div><p class="eyebrow">MY ACCOUNT</p><h2>Welcome, ${user.name}</h2></div><button class="danger" id="logoutBtn">Logout</button></div><div class="dashboard-tabs"><b>My bookings</b><span>Upcoming bookings</span><span>Previous bookings</span><span>${user.email}</span></div>${rows || '<p class="empty">No bookings yet. Your future rentals will appear here.</p>'}</section>`;
+  $('#logoutBtn').onclick = () => { sessionStorage.clear(); user = null; updateAccount(); dialog.close(); note('Logged out.'); };
+  $$('[data-receipt]').forEach((button) => (button.onclick = () => downloadReceipt(bookings.find((booking) => booking.id == button.dataset.receipt))));
+  $$('[data-cancel]').forEach((button) => (button.onclick = async () => { const response = await fetch(`/api/bookings/${button.dataset.cancel}`, { method: 'DELETE', headers: headers() }); const data = await response.json(); if (!response.ok) return note(data.error); note('Booking cancelled.'); showUserDashboard(); }));
+}
+$('#loginOpen').onclick = () => user && user.role === 'customer' ? showUserDashboard() : showLogin();
+$('#dashboardOpen').onclick = showUserDashboard;
+function showVehicleEditor(vehicle = null) {
+  const isEditing = Boolean(vehicle);
+  const content = $('#vehicleContent');
+  content.innerHTML = `<form class="vehicle-editor" id="vehicleEditor"><p class="eyebrow">OWNER VEHICLE LISTING</p><h2>${isEditing ? 'Edit vehicle' : 'List a new vehicle'}</h2><p class="payment-copy">Add a small image, vehicle information, and rental pricing.</p><div class="image-preview" id="imagePreview">${vehicle?.image ? `<img src="${vehicle.image}" alt="Vehicle preview">` : '🚘'}</div><label class="image-upload">Vehicle image <input name="image" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP · maximum 1.5 MB</small></label><div class="form-grid"><label>Vehicle name<input name="name" required value="${vehicle?.name || ''}" placeholder="e.g. Kia Seltos"></label><label>Model<input name="model" required value="${vehicle?.model || '2024'}"></label><label>Vehicle type<select name="type"><option ${vehicle?.type === 'SUV' ? 'selected' : ''}>SUV</option><option ${vehicle?.type === 'Sedan' ? 'selected' : ''}>Sedan</option><option ${vehicle?.type === 'Hatchback' ? 'selected' : ''}>Hatchback</option></select></label><label>Fuel type<select name="fuel"><option ${vehicle?.fuel === 'Petrol' ? 'selected' : ''}>Petrol</option><option ${vehicle?.fuel === 'Diesel' ? 'selected' : ''}>Diesel</option></select></label><label>Seats<input name="seats" type="number" min="2" value="${vehicle?.seats || 5}" required></label><label>Transmission<select name="gear"><option ${vehicle?.gear === 'Manual' ? 'selected' : ''}>Manual</option><option ${vehicle?.gear === 'Automatic' ? 'selected' : ''}>Automatic</option></select></label><label>Price per day<input name="dailyRate" type="number" min="500" value="${vehicle?.dailyRate || 2000}" required></label><label>Price per km<input name="perKm" type="number" min="1" value="${vehicle?.perKm || 15}" required></label></div><button class="primary pay" type="submit">${isEditing ? 'Save vehicle changes' : 'List vehicle'}</button></form>`;
+  $('#vehicleDialog').showModal();
+  const imageInput = $('#vehicleEditor [name="image"]');
+  imageInput.onchange = async () => { const image = await readVehicleImage(imageInput.files[0]); if (!image) return; $('#imagePreview').innerHTML = `<img src="${image}" alt="Vehicle preview">`; };
+  $('#vehicleEditor').onsubmit = async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const selectedImage = await readVehicleImage(imageInput.files[0]);
+    if (selectedImage === null) return;
+    const data = Object.fromEntries(form);
+    const updatedVehicle = { ...vehicle, id: vehicle?.id || Date.now(), name: data.name, model: data.model, type: data.type, fuel: data.fuel, seats: +data.seats, gear: data.gear, dailyRate: +data.dailyRate, perKm: +data.perKm, icon: data.type === 'SUV' ? '🚙' : data.type === 'Sedan' ? '🚘' : '🚗', availableDates: 'Available from 20 Aug 2026', ownerListed: true, image: selectedImage || vehicle?.image || '' };
+    const index = cars.findIndex((item) => item.id === updatedVehicle.id);
+    if (index >= 0) cars[index] = updatedVehicle; else cars.push(updatedVehicle);
+    saveOwnerVehicles();
+    drawCars();
+    $('#vehicleDialog').close();
+    note(`${updatedVehicle.name} ${isEditing ? 'updated' : 'listed'} successfully.`);
+    showAdminDashboard();
+  };
+}
+
+async function showAdminDashboard() {
+  if (!user || user.role !== 'owner') return showLogin('owner');
+  const dialog = $('#adminDialog'), box = $('#adminContent');
+  dialog.showModal();
+  box.innerHTML = '<section class="admin"><p class="empty">Loading admin dashboard…</p></section>';
+  const [bookingResponse, summaryResponse] = await Promise.all([
+    fetch('/api/bookings', { headers: headers() }),
+    fetch('/api/admin/summary', { headers: headers() }),
+  ]);
+  const bookings = await bookingResponse.json();
+  const summary = await summaryResponse.json();
+  if (!bookingResponse.ok || !summaryResponse.ok) return (box.innerHTML = `<section class="admin"><p class="empty">${bookings.error || summary.error}</p></section>`);
+  const rows = bookings.map((booking) => `<tr><td>${booking.customer}<br><small>${booking.email}</small></td><td>${booking.car}</td><td>${booking.rental_dates}</td><td>${money(booking.amount)}<br><small>${booking.payment_method}</small></td><td><span class="status status-${booking.status.toLowerCase()}">${booking.status}</span><div class="admin-actions"><button class="details-btn" data-status="Confirmed" data-id="${booking.id}">Approve</button><button class="danger" data-status="Cancelled" data-id="${booking.id}">Reject</button></div></td></tr>`).join('');
+  const fleetRows = cars.map((car) => `<li>${car.name} · ${money(car.dailyRate)}/day <button class="details-btn" data-edit-vehicle="${car.id}">Edit</button><button class="danger" data-delete-vehicle="${car.id}">Delete</button></li>`).join('');
+  box.innerHTML = `<section class="admin"><div class="admin-top"><div><p class="eyebrow">ADMIN DASHBOARD</p><h2>Rental management</h2></div><button class="details-btn" id="refreshAdmin">Refresh</button></div><div class="admin-stats"><div><b>${summary.vehicles}</b><span>Vehicles</span></div><div><b>${summary.customers}</b><span>Customers</span></div><div><b>${summary.bookings}</b><span>Bookings</span></div><div><b>${money(summary.revenue)}</b><span>Revenue</span></div></div><div class="admin-fleet"><div><b>Fleet management</b><button class="details-btn" id="addVehicle">Add vehicle</button></div><ul class="fleet-list">${fleetRows}</ul></div>${rows ? `<table><thead><tr><th>Customer</th><th>Vehicle</th><th>Rental</th><th>Payment</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="empty">No bookings yet.</p>'}</section>`;
+  $('.admin-fleet').insertAdjacentHTML('beforeend', `<form class="vehicle-form" id="vehicleForm" hidden><h3>List a new vehicle</h3><div class="form-grid"><label>Vehicle name<input name="name" required placeholder="e.g. Kia Seltos"></label><label>Model<input name="model" required value="2024"></label><label>Vehicle type<select name="type"><option>SUV</option><option>Sedan</option><option>Hatchback</option></select></label><label>Fuel type<select name="fuel"><option>Petrol</option><option>Diesel</option></select></label><label>Seats<input name="seats" type="number" min="2" value="5" required></label><label>Transmission<select name="gear"><option>Manual</option><option>Automatic</option></select></label><label>Price per day<input name="dailyRate" type="number" min="500" value="2000" required></label><label>Price per km<input name="perKm" type="number" min="1" value="15" required></label></div><button class="primary pay" type="submit">List vehicle</button></form>`);
+  $('#refreshAdmin').onclick = showAdminDashboard;
+  $('#addVehicle').onclick = () => showVehicleEditor();
+  $$('[data-edit-vehicle]').forEach((button) => (button.onclick = () => showVehicleEditor(cars.find((item) => item.id == button.dataset.editVehicle))));
+  $$('[data-delete-vehicle]').forEach((button) => (button.onclick = () => { const index = cars.findIndex((item) => item.id == button.dataset.deleteVehicle); if (index < 0 || !confirm(`Delete ${cars[index].name}?`)) return; cars.splice(index, 1); saveOwnerVehicles(); drawCars(); showAdminDashboard(); }));
+  $$('[data-status]').forEach((button) => (button.onclick = async () => { const response = await fetch(`/api/bookings/${button.dataset.id}/status`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...headers() }, body: JSON.stringify({ status: button.dataset.status }) }); const data = await response.json(); if (!response.ok) return note(data.error); note(`Booking ${button.dataset.status.toLowerCase()}.`); showAdminDashboard(); }));
+}
+$('#adminOpen').onclick = showAdminDashboard;
 grid.onclick = (e) => {
-  const id = e.target.dataset.book;
-  if (id) bookCar(cars.find((c) => c.id == id));
+  const car = cars.find((item) => item.id == (e.target.dataset.book || e.target.dataset.details));
+  if (!car) return;
+  if (e.target.dataset.details) showVehicleDetails(car);
+  if (e.target.dataset.book) bookCar(car);
 };
+
+function showVehicleDetails(car) {
+  const content = $('#vehicleContent');
+  content.innerHTML = `<section class="vehicle-details"><div class="vehicle-detail-art">${car.image ? `<img src="${car.image}" alt="${car.name}">` : car.icon}</div><p class="eyebrow">VEHICLE DETAILS</p><h2>${car.name}</h2><p class="detail-model">${car.model} model · ${car.type}</p><div class="detail-grid"><span><b>Fuel type</b>${car.fuel}</span><span><b>Seating</b>${car.seats} passengers</span><span><b>Transmission</b>${car.gear}</span><span><b>Availability</b>${car.availableDates}</span></div><div class="detail-price"><span>Starting price</span><strong>${money(car.dailyRate)} <small>/ day</small></strong></div><button class="primary pay" id="detailBook">Book this vehicle →</button></section>`;
+  $('#vehicleDialog').showModal();
+  $('#detailBook').onclick = () => {
+    $('#vehicleDialog').close();
+    bookCar(car);
+  };
+}
 function showPaymentStep(booking) {
   const box = $('#bookingContent');
   box.innerHTML = `
@@ -237,7 +347,9 @@ function showPaymentStep(booking) {
     });
     const data = await response.json();
     if (!response.ok) return note(data.error);
-    $('#bookingDialog').close();
+    box.innerHTML = `<section class="confirmation"><div class="check">✓</div><p class="eyebrow">BOOKING CONFIRMED</p><h2>Your ride is reserved</h2><p>${booking.car.name}<br>${$('#pickup').value} to ${end.toISOString().slice(0, 10)}<br><b>${money(booking.amount)}</b></p><p>Booking ID: <b>VRM${data.id}</b></p><button class="details-btn" id="downloadReceipt">Download receipt</button><button class="primary pay" id="finishBooking">Done</button></section>`;
+    $('#downloadReceipt').onclick = () => downloadReceipt({ id: data.id, car: booking.car.name, rental_dates: `${$('#pickup').value} to ${end.toISOString().slice(0, 10)}`, amount: booking.amount, status: 'Confirmed' });
+    $('#finishBooking').onclick = () => $('#bookingDialog').close();
     note(`Booking confirmed! Payment option: ${paymentMethod}.`);
   };
 }

@@ -29,11 +29,13 @@ def database():
     connection.execute("""CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT, customer TEXT NOT NULL, phone TEXT NOT NULL,
         email TEXT NOT NULL, car TEXT NOT NULL, rental_dates TEXT NOT NULL,
-        amount INTEGER NOT NULL, payment_method TEXT DEFAULT 'Not selected',
+        amount INTEGER NOT NULL, payment_method TEXT DEFAULT 'Not selected', status TEXT DEFAULT 'Confirmed',
         created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
     booking_columns = {row[1] for row in connection.execute("PRAGMA table_info(bookings)")}
     if "payment_method" not in booking_columns:
         connection.execute("ALTER TABLE bookings ADD COLUMN payment_method TEXT DEFAULT 'Not selected'")
+    if "status" not in booking_columns:
+        connection.execute("ALTER TABLE bookings ADD COLUMN status TEXT DEFAULT 'Confirmed'")
     connection.execute("""CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL)""")
     connection.execute("INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", ("Roadly Owner", "owner@roadly.com", password_hash("owner123"), "owner"))
     connection.commit()
@@ -76,6 +78,14 @@ class RoadlyHandler(SimpleHTTPRequestHandler):
         if path == "/api/bookings":
             if not (self.current_user() and self.current_user()["role"] == "owner"): return self.send_json({"error": "Owner login required."}, 403)
             with database() as conn: return self.send_json([dict(row) for row in conn.execute("SELECT * FROM bookings ORDER BY id DESC")])
+        if path == "/api/my-bookings":
+            if not (self.current_user() and self.current_user()["role"] == "customer"): return self.send_json({"error": "Customer login required."}, 403)
+            with database() as conn: return self.send_json([dict(row) for row in conn.execute("SELECT * FROM bookings WHERE email = ? ORDER BY id DESC", (self.current_user()["email"],))])
+        if path == "/api/admin/summary":
+            if not (self.current_user() and self.current_user()["role"] == "owner"): return self.send_json({"error": "Owner login required."}, 403)
+            with database() as conn:
+                bookings = conn.execute("SELECT COUNT(*) FROM bookings").fetchone()[0]; customers = conn.execute("SELECT COUNT(*) FROM users WHERE role = 'customer'").fetchone()[0]; revenue = conn.execute("SELECT COALESCE(SUM(amount), 0) FROM bookings WHERE status = 'Confirmed'").fetchone()[0]
+                return self.send_json({"vehicles": len(CARS), "customers": customers, "bookings": bookings, "revenue": revenue})
         return super().do_GET()
     def do_POST(self):
         path = urlparse(self.path).path
@@ -101,11 +111,24 @@ class RoadlyHandler(SimpleHTTPRequestHandler):
                 with database() as conn:
                     cursor = conn.execute("INSERT INTO bookings (customer, phone, email, car, rental_dates, amount, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?)", tuple(data[field] for field in required)); conn.commit()
                 return self.send_json({"id": cursor.lastrowid, "message": "Booking confirmed"}, 201)
+            if path.startswith("/api/bookings/") and path.endswith("/status"):
+                if not (self.current_user() and self.current_user()["role"] == "owner"): return self.send_json({"error": "Owner login required."}, 403)
+                status = data.get("status")
+                if status not in ("Confirmed", "Pending", "Cancelled"): return self.send_json({"error": "Invalid booking status."}, 400)
+                booking_id = path.split("/")[-2]
+                with database() as conn: conn.execute("UPDATE bookings SET status = ? WHERE id = ?", (status, booking_id)); conn.commit()
+                return self.send_json({"message": "Booking status updated"})
             return self.send_json({"error": "Not found"}, 404)
         except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error: return self.send_json({"error": str(error) or "Could not estimate this route."}, 400)
         except Exception: return self.send_json({"error": "Route service is unavailable. Please try again shortly."}, 503)
     def do_DELETE(self):
-        if urlparse(self.path).path != "/api/bookings": return self.send_json({"error": "Not found"}, 404)
+        path = urlparse(self.path).path
+        if path.startswith("/api/bookings/"):
+            if not (self.current_user() and self.current_user()["role"] == "customer"): return self.send_json({"error": "Customer login required."}, 403)
+            booking_id = path.split("/")[-1]
+            with database() as conn: conn.execute("UPDATE bookings SET status = 'Cancelled' WHERE id = ? AND email = ?", (booking_id, self.current_user()["email"])); conn.commit()
+            return self.send_json({"message": "Booking cancelled"})
+        if path != "/api/bookings": return self.send_json({"error": "Not found"}, 404)
         if not (self.current_user() and self.current_user()["role"] == "owner"): return self.send_json({"error": "Owner login required."}, 403)
         with database() as conn: conn.execute("DELETE FROM bookings"); conn.commit()
         return self.send_json({"message": "Bookings cleared"})

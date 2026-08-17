@@ -283,6 +283,22 @@ h2 {
   gap: 7px;
   flex-wrap: wrap;
 }
+.fleet-search {
+  display: grid;
+  grid-template-columns: 1.6fr repeat(3, 1fr) auto;
+  gap: 10px;
+  padding: 14px;
+  margin: 0 0 28px;
+  background: #eef4df;
+}
+.fleet-search input,
+.fleet-search select {
+  min-width: 0;
+  border: 1px solid #d1d9c3;
+  padding: 11px;
+  background: #fff;
+}
+.fleet-search .primary { padding: 11px 16px; }
 .filter {
   border: 1px solid #d9d8d0;
   background: transparent;
@@ -323,6 +339,8 @@ h2 {
   background: linear-gradient(145deg, #e9efd4, #c2dab5);
   margin-bottom: 18px;
 }
+.vehicle-art { border: 0; width: 100%; cursor: pointer; }
+.vehicle-art img { width: 100%; height: 100%; object-fit: cover; }
 .car-card:nth-child(2n) .vehicle-art {
   background: linear-gradient(145deg, #f5d7c5, #e7b89b);
 }
@@ -374,6 +392,17 @@ h2 {
   padding: 10px 14px;
   font-weight: 700;
 }
+.card-actions { display: flex; gap: 7px; }
+.details-btn { border: 1px solid #cfd7c8; background: #fff; padding: 9px 11px; font-weight: 700; }
+.vehicle-details { padding: 38px; }
+.vehicle-detail-art { height: 180px; display: grid; place-items: center; font-size: 105px; background: linear-gradient(145deg,#e9efd4,#c2dab5); border-radius: 8px; margin-bottom: 24px; }
+.vehicle-detail-art img, .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.detail-model { color: var(--muted); margin: 8px 0 20px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.detail-grid span { background: #f5f7f1; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.detail-grid b { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; }
+.detail-price { margin-top: 18px; display: flex; justify-content: space-between; align-items: end; padding: 16px; background: #edf4dc; }
+.detail-price strong { font-size: 25px; }
 .steps {
   background: #e5eed1;
   padding-top: 86px;
@@ -582,6 +611,32 @@ dialog::backdrop {
   background: #eef5db;
   color: #6b861f;
 }
+.status-confirmed { background: #e6f5df; color: #32713a; }
+.status-pending { background: #fff1c9; color: #8a6200; }
+.status-cancelled { background: #fde5e2; color: #a5362c; }
+.admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 25px 0; }
+.admin-stats div { padding: 16px; background: #edf4dc; display: flex; flex-direction: column; gap: 4px; }
+.admin-stats b { font: 700 23px Outfit; }
+.admin-stats span, .admin-fleet span { color: var(--muted); font-size: 12px; }
+.admin-fleet { padding: 15px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.admin-fleet > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.fleet-list { margin: 8px 0 0; padding: 0; list-style: none; max-height: 190px; overflow: auto; }
+.fleet-list li { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.fleet-list button { padding: 5px 7px; font-size: 11px; }
+.vehicle-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.vehicle-form h3 { margin: 0 0 12px; font-size: 20px; }
+.vehicle-form .form-grid { grid-template-columns: 1fr 1fr; }
+.vehicle-editor { padding: 38px; }
+.image-preview { height: 150px; border: 1px dashed #9eae91; background: #f1f5e7; display: grid; place-items: center; overflow: hidden; font-size: 65px; margin: 16px 0; }
+.image-upload { display: flex; flex-direction: column; gap: 7px; font-size: 13px; font-weight: 700; margin-bottom: 16px; }
+.image-upload input { font-weight: 400; }
+.image-upload small { color: var(--muted); font-weight: 400; }
+.admin-actions, .history-actions { display: flex; gap: 6px; margin-top: 8px; }
+.admin-actions button, .history-actions button { font-size: 11px; padding: 6px 8px; }
+.booking-history { display: flex; justify-content: space-between; gap: 18px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+.booking-history h3 { margin: 6px 0; font-size: 20px; }
+.booking-history p { color: var(--muted); margin: 0; }
+.dashboard-tabs { display: flex; gap: 14px; flex-wrap: wrap; padding: 13px 0; border-bottom: 1px solid var(--line); margin-bottom: 8px; font-size: 13px; }
 .empty {
   color: var(--muted);
   padding: 25px 0;
@@ -629,6 +684,9 @@ dialog::backdrop {
   .step-grid {
     grid-template-columns: 1fr;
   }
+  .fleet-search,.admin-stats { grid-template-columns: 1fr 1fr; }
+  .fleet-search .primary { grid-column: span 2; }
+  .detail-grid { grid-template-columns: 1fr; }
   .section {
     padding-top: 85px;
   }

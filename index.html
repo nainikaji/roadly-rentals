@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=3" />
   <link rel="stylesheet" href="toast.css" />
   <link rel="stylesheet" href="layout-fix.css?v=3" />
   <link rel="stylesheet" href="auth.css" />
@@ -17,7 +17,7 @@
   <div id="toast" role="status"></div>
   <header class="topbar">
     <a class="brand" href="#home" aria-label="Roadly home"><span class="brand-mark">R</span>ROADLY</a>
-    <nav><a href="#vehicles">Explore cars</a><a href="#how">How it works</a><button class="text-btn" id="loginOpen">Login</button><button class="text-btn" id="adminOpen">Owner portal</button></nav>
+    <nav><a href="#vehicles">Explore cars</a><a href="#how">How it works</a><button class="text-btn" id="loginOpen">Login</button><button class="text-btn" id="dashboardOpen" hidden>My dashboard</button><button class="text-btn" id="adminOpen">Owner portal</button></nav>
     <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
   </header>
 
@@ -41,6 +41,13 @@
 
     <section class="cars section" id="vehicles">
       <div class="section-head"><div><p class="eyebrow">THE FLEET</p><h2>Choose your perfect ride</h2></div><div class="filters"><button class="filter active" data-filter="all">All cars</button><button class="filter" data-filter="SUV">SUVs</button><button class="filter" data-filter="Sedan">Sedans</button><button class="filter" data-filter="Hatchback">Hatchbacks</button></div></div>
+      <form class="fleet-search" id="fleetSearch">
+        <input id="vehicleSearch" type="search" placeholder="Search vehicle, for example Honda">
+        <select id="fuelFilter"><option value="all">All fuel types</option><option>Petrol</option><option>Diesel</option></select>
+        <select id="gearFilter"><option value="all">All transmissions</option><option>Manual</option><option>Automatic</option></select>
+        <select id="priceFilter"><option value="all">Any daily price</option><option value="2000">Up to ₹2,000 / day</option><option value="3000">Up to ₹3,000 / day</option></select>
+        <button class="primary" type="submit">Search</button>
+      </form>
       <div class="car-grid" id="carGrid"></div>
     </section>
 
@@ -49,10 +56,12 @@
   </main>
 
   <dialog id="bookingDialog"><button class="close" data-close="bookingDialog">×</button><div id="bookingContent"></div></dialog>
+  <dialog id="vehicleDialog"><button class="close" data-close="vehicleDialog">×</button><div id="vehicleContent"></div></dialog>
+  <dialog id="userDialog"><button class="close" data-close="userDialog">×</button><div id="userContent"></div></dialog>
   <dialog id="adminDialog" class="admin-dialog"><button class="close" data-close="adminDialog">×</button><div id="adminContent"></div></dialog>
   <dialog id="loginDialog"><button class="close" data-close="loginDialog">×</button><div id="loginContent"></div></dialog>
   <footer><span>© 2026 Roadly Rentals</span><span>Designed for better journeys</span></footer>
-  <script src="app2.js?v=4"></script>
-  <script src="fleet-extension.js?v=1"></script>
+  <script src="app2.js?v=6"></script>
+  <script src="fleet-extension.js?v=2"></script>
 </body>
 </html>

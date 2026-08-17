@@ -61,4 +61,9 @@ cars.push(
     icon: '🚘',
   }
 );
+cars.forEach((car) => {
+  car.model ||= '2024';
+  car.fuel ||= car.type === 'SUV' ? 'Diesel' : 'Petrol';
+  car.availableDates ||= 'Available from 20 Aug 2026';
+});
 drawCars();
