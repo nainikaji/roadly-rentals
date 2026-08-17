@@ -29,7 +29,11 @@ def database():
     connection.execute("""CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT, customer TEXT NOT NULL, phone TEXT NOT NULL,
         email TEXT NOT NULL, car TEXT NOT NULL, rental_dates TEXT NOT NULL,
-        amount INTEGER NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+        amount INTEGER NOT NULL, payment_method TEXT DEFAULT 'Not selected',
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+    booking_columns = {row[1] for row in connection.execute("PRAGMA table_info(bookings)")}
+    if "payment_method" not in booking_columns:
+        connection.execute("ALTER TABLE bookings ADD COLUMN payment_method TEXT DEFAULT 'Not selected'")
     connection.execute("""CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, email TEXT UNIQUE NOT NULL, password_hash TEXT NOT NULL, role TEXT NOT NULL)""")
     connection.execute("INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)", ("Roadly Owner", "owner@roadly.com", password_hash("owner123"), "owner"))
     connection.commit()
@@ -92,10 +96,10 @@ class RoadlyHandler(SimpleHTTPRequestHandler):
                 distance, source = estimated_distance(data["pickup"], data["destination"]); return self.send_json({"distance_km": distance, "source": source})
             if path == "/api/bookings":
                 if not (self.current_user() and self.current_user()["role"] == "customer"): return self.send_json({"error": "Customer login required before booking."}, 403)
-                required = ("customer", "phone", "email", "car", "rental_dates", "amount")
+                required = ("customer", "phone", "email", "car", "rental_dates", "amount", "payment_method")
                 if any(not data.get(field) for field in required): return self.send_json({"error": "Please complete every booking field."}, 400)
                 with database() as conn:
-                    cursor = conn.execute("INSERT INTO bookings (customer, phone, email, car, rental_dates, amount) VALUES (?, ?, ?, ?, ?, ?)", tuple(data[field] for field in required)); conn.commit()
+                    cursor = conn.execute("INSERT INTO bookings (customer, phone, email, car, rental_dates, amount, payment_method) VALUES (?, ?, ?, ?, ?, ?, ?)", tuple(data[field] for field in required)); conn.commit()
                 return self.send_json({"id": cursor.lastrowid, "message": "Booking confirmed"}, 201)
             return self.send_json({"error": "Not found"}, 404)
         except (json.JSONDecodeError, ValueError, KeyError, TypeError) as error: return self.send_json({"error": str(error) or "Could not estimate this route."}, 400)

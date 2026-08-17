@@ -1,1 +1,31 @@
-.plan-picker{grid-column:1/-1;border:0;padding:0;margin:0}.plan-picker legend{font-size:11px;letter-spacing:.6px;font-weight:700;color:#b5c1b7;margin-bottom:7px}.plan-picker div{display:flex;gap:8px;flex-wrap:wrap}.plan-btn{border:1px solid #526158;background:#29332e;color:#dce4dc;padding:9px 12px;font-size:13px;font-weight:700}.plan-btn.active{background:#c9f258;border-color:#c9f258;color:#17211d}
+.plan-picker {
+  grid-column: 1/-1;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+.plan-picker legend {
+  font-size: 11px;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+  color: #b5c1b7;
+  margin-bottom: 7px;
+}
+.plan-picker div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.plan-btn {
+  border: 1px solid #526158;
+  background: #29332e;
+  color: #dce4dc;
+  padding: 9px 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.plan-btn.active {
+  background: #c9f258;
+  border-color: #c9f258;
+  color: #17211d;
+}
