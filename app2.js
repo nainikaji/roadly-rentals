@@ -18,7 +18,16 @@ const cars = [
   },
 }));
 const savedOwnerVehicles = JSON.parse(localStorage.getItem('roadlyOwnerVehicles') || '[]');
-if (Array.isArray(savedOwnerVehicles)) cars.push(...savedOwnerVehicles);
+// Saved edits to the built-in cars must replace the original car, not create a
+// second car with the same ID. This also keeps the thumbnail and Details view
+// using exactly the same vehicle photo.
+if (Array.isArray(savedOwnerVehicles)) {
+  savedOwnerVehicles.forEach((savedVehicle) => {
+    const existingIndex = cars.findIndex((car) => car.id === savedVehicle.id);
+    if (existingIndex >= 0) cars[existingIndex] = savedVehicle;
+    else cars.push(savedVehicle);
+  });
+}
 function saveOwnerVehicles() {
   localStorage.setItem(
     'roadlyOwnerVehicles',
@@ -38,27 +47,24 @@ function readVehicleImage(file) {
       image.onload = () => {
         const targetWidth = 960;
         const targetHeight = 540;
-        const sourceRatio = image.width / image.height;
-        const targetRatio = targetWidth / targetHeight;
-        let sourceWidth = image.width;
-        let sourceHeight = image.height;
-        let sourceX = 0;
-        let sourceY = 0;
-
-        if (sourceRatio > targetRatio) {
-          sourceWidth = image.height * targetRatio;
-          sourceX = (image.width - sourceWidth) / 2;
-        } else {
-          sourceHeight = image.width / targetRatio;
-          sourceY = (image.height - sourceHeight) / 2;
-        }
-
         const canvas = document.createElement('canvas');
         canvas.width = targetWidth;
         canvas.height = targetHeight;
-        canvas
-          .getContext('2d')
-          .drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+        const context = canvas.getContext('2d');
+        // Fit the full photo inside the vehicle frame. No part of the car is
+        // removed; empty space is filled with the Roadly card colour.
+        context.fillStyle = '#edf4dc';
+        context.fillRect(0, 0, targetWidth, targetHeight);
+        const scale = Math.min(targetWidth / image.width, targetHeight / image.height);
+        const drawWidth = image.width * scale;
+        const drawHeight = image.height * scale;
+        context.drawImage(
+          image,
+          (targetWidth - drawWidth) / 2,
+          (targetHeight - drawHeight) / 2,
+          drawWidth,
+          drawHeight
+        );
         resolve(canvas.toDataURL('image/jpeg', 0.84));
       };
       image.onerror = () => {
@@ -325,10 +331,12 @@ async function showAdminDashboard() {
 }
 $('#adminOpen').onclick = showAdminDashboard;
 grid.onclick = (e) => {
-  const car = cars.find((item) => item.id == (e.target.dataset.book || e.target.dataset.details));
+  const action = e.target.closest('[data-book], [data-details]');
+  if (!action) return;
+  const car = cars.find((item) => item.id == (action.dataset.book || action.dataset.details));
   if (!car) return;
-  if (e.target.dataset.details) showVehicleDetails(car);
-  if (e.target.dataset.book) bookCar(car);
+  if (action.dataset.details) showVehicleDetails(car);
+  if (action.dataset.book) bookCar(car);
 };
 
 function showVehicleDetails(car) {
