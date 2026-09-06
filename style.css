@@ -339,8 +339,8 @@ h2 {
   background: linear-gradient(145deg, #e9efd4, #c2dab5);
   margin-bottom: 18px;
 }
-.vehicle-art { border: 0; width: 100%; cursor: pointer; }
-.vehicle-art img { width: 100%; height: 100%; object-fit: cover; }
+.vehicle-art { border: 0; width: 100%; cursor: pointer; overflow: hidden; padding: 0; line-height: 0; }
+.vehicle-art img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .car-card:nth-child(2n) .vehicle-art {
   background: linear-gradient(145deg, #f5d7c5, #e7b89b);
 }
@@ -396,7 +396,8 @@ h2 {
 .details-btn { border: 1px solid #cfd7c8; background: #fff; padding: 9px 11px; font-weight: 700; }
 .vehicle-details { padding: 38px; }
 .vehicle-detail-art { height: 180px; display: grid; place-items: center; font-size: 105px; background: linear-gradient(145deg,#e9efd4,#c2dab5); border-radius: 8px; margin-bottom: 24px; }
-.vehicle-detail-art img, .image-preview img { width: 100%; height: 100%; object-fit: cover; }
+.vehicle-detail-art { overflow: hidden; }
+.vehicle-detail-art img, .image-preview img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .detail-model { color: var(--muted); margin: 8px 0 20px; }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .detail-grid span { background: #f5f7f1; padding: 12px; display: flex; flex-direction: column; gap: 4px; }

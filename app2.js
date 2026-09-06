@@ -27,13 +27,46 @@ function saveOwnerVehicles() {
 }
 function readVehicleImage(file) {
   if (!file) return Promise.resolve('');
-  if (file.size > 1500000) {
-    note('Please choose an image smaller than 1.5 MB.');
+  if (!file.type.startsWith('image/')) {
+    note('Please choose an image file.');
     return Promise.resolve(null);
   }
   return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const targetWidth = 960;
+        const targetHeight = 540;
+        const sourceRatio = image.width / image.height;
+        const targetRatio = targetWidth / targetHeight;
+        let sourceWidth = image.width;
+        let sourceHeight = image.height;
+        let sourceX = 0;
+        let sourceY = 0;
+
+        if (sourceRatio > targetRatio) {
+          sourceWidth = image.height * targetRatio;
+          sourceX = (image.width - sourceWidth) / 2;
+        } else {
+          sourceHeight = image.width / targetRatio;
+          sourceY = (image.height - sourceHeight) / 2;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        canvas
+          .getContext('2d')
+          .drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
+        resolve(canvas.toDataURL('image/jpeg', 0.84));
+      };
+      image.onerror = () => {
+        note('This image could not be processed. Try another one.');
+        resolve(null);
+      };
+      image.src = reader.result;
+    };
     reader.readAsDataURL(file);
   });
 }
