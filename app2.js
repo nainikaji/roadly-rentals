@@ -129,6 +129,10 @@ function matchesFilters(car) {
     car.dailyRate <= maximumPrice
   );
 }
+function vehiclePhoto(car, className) {
+  if (!car.image) return car.icon;
+  return `<span class="${className}-backdrop" aria-hidden="true" style="background-image:url('${car.image}')"></span><img src="${car.image}" alt="${car.name}">`;
+}
 function drawCars() {
   const days = Math.max(1, +daysInput.value || 1);
   grid.innerHTML = cars
@@ -149,7 +153,7 @@ function drawCars() {
         unit = 'estimated trip';
         detail = `<small><br>${estimate.distance_km} km route</small>`;
       }
-      return `<article class="car-card"><button class="vehicle-art" data-details="${c.id}" aria-label="View ${c.name} details">${c.image ? `<img src="${c.image}" alt="${c.name}">` : c.icon}</button><div class="car-name"><div><h3>${c.name}</h3><span>${c.type} · ${c.fuel}</span></div><span class="tag">Available</span></div><div class="specs"><span>👤 ${c.seats} seats</span><span>⚙ ${c.gear}</span></div><div class="price-row"><div><strong>${price}</strong> <small>${unit}</small>${detail}</div><div class="card-actions"><button class="details-btn" data-details="${c.id}">Details</button><button class="book-btn" data-book="${c.id}">Book now</button></div></div></article>`;
+      return `<article class="car-card"><button class="vehicle-art" data-details="${c.id}" aria-label="View ${c.name} details">${vehiclePhoto(c, 'vehicle-art')}</button><div class="car-name"><div><h3>${c.name}</h3><span>${c.type} · ${c.fuel}</span></div><span class="tag">Available</span></div><div class="specs"><span>👤 ${c.seats} seats</span><span>⚙ ${c.gear}</span></div><div class="price-row"><div><strong>${price}</strong> <small>${unit}</small>${detail}</div><div class="card-actions"><button class="details-btn" data-details="${c.id}">Details</button><button class="book-btn" data-book="${c.id}">Book now</button></div></div></article>`;
     })
     .join('');
 }
@@ -371,7 +375,7 @@ grid.onclick = (e) => {
 
 function showVehicleDetails(car) {
   const content = $('#vehicleContent');
-  content.innerHTML = `<section class="vehicle-details"><div class="vehicle-detail-art">${car.image ? `<img src="${car.image}" alt="${car.name}">` : car.icon}</div><p class="eyebrow">VEHICLE DETAILS</p><h2>${car.name}</h2><p class="detail-model">${car.model} model · ${car.type}</p><div class="detail-grid"><span><b>Fuel type</b>${car.fuel}</span><span><b>Seating</b>${car.seats} passengers</span><span><b>Transmission</b>${car.gear}</span><span><b>Availability</b>${car.availableDates}</span></div><div class="detail-price"><span>Starting price</span><strong>${money(car.dailyRate)} <small>/ day</small></strong></div><button class="primary pay" id="detailBook">Book this vehicle →</button></section>`;
+  content.innerHTML = `<section class="vehicle-details"><div class="vehicle-detail-art">${vehiclePhoto(car, 'vehicle-detail-art')}</div><p class="eyebrow">VEHICLE DETAILS</p><h2>${car.name}</h2><p class="detail-model">${car.model} model · ${car.type}</p><div class="detail-grid"><span><b>Fuel type</b>${car.fuel}</span><span><b>Seating</b>${car.seats} passengers</span><span><b>Transmission</b>${car.gear}</span><span><b>Availability</b>${car.availableDates}</span></div><div class="detail-price"><span>Starting price</span><strong>${money(car.dailyRate)} <small>/ day</small></strong></div><button class="primary pay" id="detailBook">Book this vehicle →</button></section>`;
   $('#vehicleDialog').showModal();
   $('#detailBook').onclick = () => {
     $('#vehicleDialog').close();
