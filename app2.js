@@ -36,6 +36,7 @@ function saveOwnerVehicles() {
 }
 function previewVehicleImage(file) {
   if (!file) return Promise.resolve('');
+  if (typeof file === 'string') return Promise.resolve(file);
   if (!file.type.startsWith('image/')) {
     note('Please choose an image file.');
     return Promise.resolve(null);
@@ -304,8 +305,8 @@ function showVehicleEditor(vehicle = null) {
   content.innerHTML = `<form class="vehicle-editor" id="vehicleEditor"><p class="eyebrow">OWNER VEHICLE LISTING</p><h2>${isEditing ? 'Edit vehicle' : 'List a new vehicle'}</h2><p class="payment-copy">Upload the original photo, then use the controls to choose its position.</p><div class="image-preview" id="imagePreview">${vehicle?.image ? `<img src="${vehicle.image}" alt="Vehicle preview">` : '🚘'}</div><label class="image-upload">Vehicle image <input name="image" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG, JPG, or WebP · maximum 1.5 MB</small></label><div class="image-controls" id="imageControls" hidden><b>Adjust photo</b><small>Use 100% zoom to keep the complete image. Higher zoom can crop the edges.</small><label>Zoom <output id="zoomValue">100%</output><input name="imageZoom" type="range" min="100" max="200" value="100"></label><label>Move left / right<input name="imageX" type="range" min="-100" max="100" value="0"></label><label>Move up / down<input name="imageY" type="range" min="-100" max="100" value="0"></label></div><div class="form-grid"><label>Vehicle name<input name="name" required value="${vehicle?.name || ''}" placeholder="e.g. Kia Seltos"></label><label>Model<input name="model" required value="${vehicle?.model || '2024'}"></label><label>Vehicle type<select name="type"><option ${vehicle?.type === 'SUV' ? 'selected' : ''}>SUV</option><option ${vehicle?.type === 'Sedan' ? 'selected' : ''}>Sedan</option><option ${vehicle?.type === 'Hatchback' ? 'selected' : ''}>Hatchback</option></select></label><label>Fuel type<select name="fuel"><option ${vehicle?.fuel === 'Petrol' ? 'selected' : ''}>Petrol</option><option ${vehicle?.fuel === 'Diesel' ? 'selected' : ''}>Diesel</option></select></label><label>Seats<input name="seats" type="number" min="2" value="${vehicle?.seats || 5}" required></label><label>Transmission<select name="gear"><option ${vehicle?.gear === 'Manual' ? 'selected' : ''}>Manual</option><option ${vehicle?.gear === 'Automatic' ? 'selected' : ''}>Automatic</option></select></label><label>Price per day<input name="dailyRate" type="number" min="500" value="${vehicle?.dailyRate || 2000}" required></label><label>Price per km<input name="perKm" type="number" min="1" value="${vehicle?.perKm || 15}" required></label></div><button class="primary pay" type="submit">${isEditing ? 'Save vehicle changes' : 'List vehicle'}</button></form>`;
   $('#vehicleDialog').showModal();
   const imageInput = $('#vehicleEditor [name="image"]');
-  const adjustment = { zoom: 100, x: 0, y: 0 };
-  let originalImage = '';
+  const adjustment = { zoom: 100, x: 0, y: 0, ...(vehicle?.imageAdjustment || {}) };
+  let originalImage = vehicle?.imageSource || vehicle?.image || '';
   const updatePreview = () => {
     if (!originalImage) return;
     const { zoom, x, y } = adjustment;
@@ -316,6 +317,12 @@ function showVehicleEditor(vehicle = null) {
     originalImage = await previewVehicleImage(imageInput.files[0]);
     if (!originalImage) return;
     $('#imageControls').hidden = false;
+    adjustment.zoom = 100;
+    adjustment.x = 0;
+    adjustment.y = 0;
+    $('#vehicleEditor [name="imageZoom"]').value = 100;
+    $('#vehicleEditor [name="imageX"]').value = 0;
+    $('#vehicleEditor [name="imageY"]').value = 0;
     updatePreview();
   };
   ['imageZoom', 'imageX', 'imageY'].forEach((name) => {
@@ -324,13 +331,23 @@ function showVehicleEditor(vehicle = null) {
       updatePreview();
     };
   });
+  if (originalImage) {
+    $('#imageControls').hidden = false;
+    $('#vehicleEditor [name="imageZoom"]').value = adjustment.zoom;
+    $('#vehicleEditor [name="imageX"]').value = adjustment.x;
+    $('#vehicleEditor [name="imageY"]').value = adjustment.y;
+    updatePreview();
+  }
   $('#vehicleEditor').onsubmit = async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
-    const selectedImage = await readVehicleImage(imageInput.files[0], adjustment);
+    const sourceImage = imageInput.files[0]
+      ? await readVehicleImage(imageInput.files[0])
+      : originalImage;
+    const selectedImage = await readVehicleImage(sourceImage, adjustment);
     if (selectedImage === null) return;
     const data = Object.fromEntries(form);
-    const updatedVehicle = { ...vehicle, id: vehicle?.id || Date.now(), name: data.name, model: data.model, type: data.type, fuel: data.fuel, seats: +data.seats, gear: data.gear, dailyRate: +data.dailyRate, perKm: +data.perKm, icon: data.type === 'SUV' ? '🚙' : data.type === 'Sedan' ? '🚘' : '🚗', availableDates: 'Available from 20 Aug 2026', ownerListed: true, image: selectedImage || vehicle?.image || '' };
+    const updatedVehicle = { ...vehicle, id: vehicle?.id || Date.now(), name: data.name, model: data.model, type: data.type, fuel: data.fuel, seats: +data.seats, gear: data.gear, dailyRate: +data.dailyRate, perKm: +data.perKm, icon: data.type === 'SUV' ? '🚙' : data.type === 'Sedan' ? '🚘' : '🚗', availableDates: 'Available from 20 Aug 2026', ownerListed: true, image: selectedImage || vehicle?.image || '', imageSource: sourceImage || vehicle?.imageSource || '', imageAdjustment: adjustment };
     const index = cars.findIndex((item) => item.id === updatedVehicle.id);
     if (index >= 0) cars[index] = updatedVehicle; else cars.push(updatedVehicle);
     saveOwnerVehicles();
